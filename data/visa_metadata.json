@@ -1,0 +1,14 @@
+[
+  {
+    "id": "usa_f1_student_chunk1",
+    "country": "USA",
+    "visa_type": "F1 Student",
+    "file": "usa_f1_student.txt"
+  },
+  {
+    "id": "uk_student_visa_chunk2",
+    "country": "UK",
+    "visa_type": "Student Visa",
+    "file": "uk_student_visa.txt"
+  }
+]
