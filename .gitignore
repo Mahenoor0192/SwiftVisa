@@ -1,1 +1,28 @@
-/.venv
+# create .gitignore (overwrites if exists)
+@"
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual environments
+venv/
+venv311/
+.venv/
+
+# Data and vector stores (don't commit large data)
+data/
+data/*
+!data/policies/       # if you want to keep raw PDFs in repo, remove these two lines
+!data/cleaned_policies/
+vector_store/
+*.faiss
+*.bin
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+"@ > .gitignore
