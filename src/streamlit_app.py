@@ -13,6 +13,11 @@ import sys
 ROOT = pathlib.Path(__file__).parent
 APP_PATH = ROOT / "app.py"
 
+# Ensure the 'src' directory (where this script and app.py reside) is in the Python path.
+# This is the most reliable way to ensure local modules are found.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 def load_and_exec_app(path: pathlib.Path):
     text = path.read_text(encoding='utf-8')
 
