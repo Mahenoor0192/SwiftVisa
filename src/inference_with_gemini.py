@@ -147,6 +147,7 @@ def make_full_prompt(user_profile: Dict[str, str], retrieved_context: str) -> st
     template = load_template()
     filled = template.format(
         retrieved_context=retrieved_context,
+        name=user_profile.get("name", "the applicant"),
         age=user_profile.get("age", "Unknown"),
         nationality=user_profile.get("nationality", "Unknown"),
         education=user_profile.get("education", "Unknown"),
