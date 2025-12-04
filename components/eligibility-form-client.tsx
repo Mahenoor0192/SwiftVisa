@@ -21,21 +21,23 @@ type FormData = {
   universityAcceptance: string
   schoolName: string
   formI20Issued: string
-  proofOfFunds: string
+  proofOfFundsAmount: string
   testScores: string
   // H1B specific
   jobOffer: string
   employerName: string
-  lca: string
-  specialtyOccupation: string
+  yearsExperience: string
+  degreeEquiv: string
   // B1/B2 specific
   travelPurpose: string
-  returnTies: string
-  previousVisits: string
+  tripDurationDays: string
+  invitationHost: string
+  returnTicket: string
   // K1 specific
-  uscitizenFiance: string
+  usCitizenSponsor: string
   metInPerson: string
-  intentToMarry: string
+  relationshipLengthMonths: string
+  evidenceList: string
 }
 
 const initialFormData: FormData = {
@@ -48,81 +50,96 @@ const initialFormData: FormData = {
   universityAcceptance: "",
   schoolName: "",
   formI20Issued: "",
-  proofOfFunds: "",
+  proofOfFundsAmount: "",
   testScores: "",
   jobOffer: "",
   employerName: "",
-  lca: "",
-  specialtyOccupation: "",
+  yearsExperience: "0",
+  degreeEquiv: "",
   travelPurpose: "",
-  returnTies: "",
-  previousVisits: "",
-  uscitizenFiance: "",
+  tripDurationDays: "7",
+  invitationHost: "",
+  returnTicket: "",
+  usCitizenSponsor: "",
   metInPerson: "",
-  intentToMarry: "",
+  relationshipLengthMonths: "0",
+  evidenceList: "",
 }
 
 export function EligibilityFormClient() {
   const [formData, setFormData] = useState<FormData>(initialFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [result, setResult] = useState<{ eligible: boolean; message: string } | null>(null)
+  const [result, setResult] = useState<Result | null>(null)
+  const [submittedFormData, setSubmittedFormData] = useState<FormData | null>(null)
+  const [missingInfo, setMissingInfo] = useState<{ [key: string]: string }>({})
+
+  const handleMissingInfoChange = (field: string, value: string) => {
+    setMissingInfo((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleMissingInfoSubmit = async () => {
+    if (!submittedFormData) return
+
+    const combinedData = { ...submittedFormData }
+    for (const key in missingInfo) {
+      const keys = key.split(".")
+      if (keys.length === 2) {
+        const category = keys[0]
+        const field = keys[1] as keyof FormData
+        // @ts-ignore
+        combinedData[field] = missingInfo[key]
+      }
+    }
+
+    setIsSubmitting(true)
+    setResult(null)
+
+    try {
+      const response = await fetch("/api/check-eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(combinedData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "An unknown error occurred")
+      }
+
+      const resultData = await response.json()
+      setResult(resultData)
+    } catch (error: any) {
+      setResult({ error: error.message })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setResult(null)
+    setSubmittedFormData(formData)
 
-    // Build the profile data based on visa type
-    const profileData = {
-      visa_type: formData.visaType,
-      age: formData.age,
-      nationality: formData.nationality,
-      education: formData.education,
-      employment: formData.employment,
-      income: formData.income,
-      ...(formData.visaType === "F1 Student" && {
-        university_acceptance: formData.universityAcceptance,
-        school_name: formData.schoolName,
-        form_i20_issued: formData.formI20Issued,
-        proof_of_funds: formData.proofOfFunds,
-        test_scores: formData.testScores,
-      }),
-      ...(formData.visaType === "H1B Work" && {
-        job_offer: formData.jobOffer,
-        employer_name: formData.employerName,
-        lca: formData.lca,
-        specialty_occupation: formData.specialtyOccupation,
-      }),
-      ...(formData.visaType === "B1/B2 Visitor" && {
-        travel_purpose: formData.travelPurpose,
-        return_ties: formData.returnTies,
-        previous_visits: formData.previousVisits,
-      }),
-      ...(formData.visaType === "K1 Fiance" && {
-        uscitizen_fiance: formData.uscitizenFiance,
-        met_in_person: formData.metInPerson,
-        intent_to_marry: formData.intentToMarry,
-      }),
-    }
-
-    console.log("Eligibility Check Payload:", JSON.stringify(profileData, null, 2))
-
-    // TODO: Replace with actual API call to your backend
-    // Example: const response = await fetch('YOUR_BACKEND_URL/api/evaluate', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(profileData),
-    // })
-
-    // Simulated response
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setResult({
-        eligible: true,
-        message:
-          "Based on your profile, you appear to meet the basic requirements. Please consult with an immigration attorney for a complete assessment.",
+    try {
+      const response = await fetch("/api/check-eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       })
-    }, 2000)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "An unknown error occurred")
+      }
+
+      const resultData = await response.json()
+      setResult(resultData)
+    } catch (error: any) {
+      setResult({ error: error.message })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const updateField = (field: keyof FormData, value: string) => {
@@ -262,8 +279,8 @@ export function EligibilityFormClient() {
                 <Input
                   id="proofOfFunds"
                   placeholder="e.g., USD 50,000"
-                  value={formData.proofOfFunds}
-                  onChange={(e) => updateField("proofOfFunds", e.target.value)}
+                  value={formData.proofOfFundsAmount}
+                  onChange={(e) => updateField("proofOfFundsAmount", e.target.value)}
                 />
               </div>
 
@@ -294,7 +311,6 @@ export function EligibilityFormClient() {
                     <SelectItem value="Unknown">Unknown</SelectItem>
                     <SelectItem value="Yes">Yes</SelectItem>
                     <SelectItem value="No">No</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -310,28 +326,28 @@ export function EligibilityFormClient() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lca">Labor Condition Application (LCA) filed?</Label>
-                <Select value={formData.lca} onValueChange={(value) => updateField("lca", value)}>
-                  <SelectTrigger id="lca">
+                <Label htmlFor="yearsExperience">Years of experience</Label>
+                <Input
+                  id="yearsExperience"
+                  type="number"
+                  placeholder="Enter years of experience"
+                  value={formData.yearsExperience}
+                  onChange={(e) => updateField("yearsExperience", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="degreeEquiv">Degree equivalency to US bachelor's?</Label>
+                <Select value={formData.degreeEquiv} onValueChange={(value) => updateField("degreeEquiv", value)}>
+                  <SelectTrigger id="degreeEquiv">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Unknown">Unknown</SelectItem>
                     <SelectItem value="Yes">Yes</SelectItem>
                     <SelectItem value="No">No</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="specialtyOccupation">Specialty occupation?</Label>
-                <Input
-                  id="specialtyOccupation"
-                  placeholder="Describe your specialty occupation"
-                  value={formData.specialtyOccupation}
-                  onChange={(e) => updateField("specialtyOccupation", e.target.value)}
-                />
               </div>
             </div>
           )}
@@ -351,16 +367,38 @@ export function EligibilityFormClient() {
                     <SelectItem value="Tourism">Tourism</SelectItem>
                     <SelectItem value="Business">Business</SelectItem>
                     <SelectItem value="Medical">Medical Treatment</SelectItem>
-                    <SelectItem value="Conference">Conference/Event</SelectItem>
-                    <SelectItem value="Family Visit">Family Visit</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="returnTies">Strong ties to home country?</Label>
-                <Select value={formData.returnTies} onValueChange={(value) => updateField("returnTies", value)}>
-                  <SelectTrigger id="returnTies">
+                <Label htmlFor="tripDurationDays">Trip duration (days)</Label>
+                <Input
+                  id="tripDurationDays"
+                  type="number"
+                  placeholder="Enter trip duration in days"
+                  value={formData.tripDurationDays}
+                  onChange={(e) => updateField("tripDurationDays", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invitationHost">Invitation / host (if any)</Label>
+                <Input
+                  id="invitationHost"
+                  placeholder="Enter invitation or host details"
+                  value={formData.invitationHost}
+                  onChange={(e) => updateField("invitationHost", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="returnTicket">Return ticket booked?</Label>
+                <Select
+                  value={formData.returnTicket}
+                  onValueChange={(value) => updateField("returnTicket", value)}
+                >
+                  <SelectTrigger id="returnTicket">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -369,16 +407,6 @@ export function EligibilityFormClient() {
                     <SelectItem value="No">No</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="previousVisits">Previous US visits</Label>
-                <Input
-                  id="previousVisits"
-                  placeholder="Number of previous visits"
-                  value={formData.previousVisits}
-                  onChange={(e) => updateField("previousVisits", e.target.value)}
-                />
               </div>
             </div>
           )}
@@ -389,12 +417,12 @@ export function EligibilityFormClient() {
               <h3 className="font-semibold text-primary">K1 Fiance Visa-specific fields</h3>
 
               <div className="space-y-2">
-                <Label htmlFor="uscitizenFiance">Is your fiance a US citizen?</Label>
+                <Label htmlFor="usCitizenSponsor">Is your fiance a US citizen?</Label>
                 <Select
-                  value={formData.uscitizenFiance}
-                  onValueChange={(value) => updateField("uscitizenFiance", value)}
+                  value={formData.usCitizenSponsor}
+                  onValueChange={(value) => updateField("usCitizenSponsor", value)}
                 >
-                  <SelectTrigger id="uscitizenFiance">
+                  <SelectTrigger id="usCitizenSponsor">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -420,17 +448,24 @@ export function EligibilityFormClient() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="intentToMarry">Intent to marry within 90 days?</Label>
-                <Select value={formData.intentToMarry} onValueChange={(value) => updateField("intentToMarry", value)}>
-                  <SelectTrigger id="intentToMarry">
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Unknown">Unknown</SelectItem>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="relationshipLengthMonths">Relationship length (months)</Label>
+                <Input
+                  id="relationshipLengthMonths"
+                  type="number"
+                  placeholder="Enter relationship length in months"
+                  value={formData.relationshipLengthMonths}
+                  onChange={(e) => updateField("relationshipLengthMonths", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="evidenceList">Evidence list (brief) - photos, tickets, messages</Label>
+                <Input
+                  id="evidenceList"
+                  placeholder="e.g., photos, tickets, messages"
+                  value={formData.evidenceList}
+                  onChange={(e) => updateField("evidenceList", e.target.value)}
+                />
               </div>
             </div>
           )}
@@ -451,20 +486,45 @@ export function EligibilityFormClient() {
           {result && (
             <div
               className={`mt-4 rounded-lg border p-4 ${
-                result.eligible
+                result.decision === "Likely Eligible"
                   ? "border-green-200 bg-green-50 text-green-800"
-                  : "border-red-200 bg-red-50 text-red-800"
+                  : result.decision === "Likely Ineligible"
+                  ? "border-red-200 bg-red-50 text-red-800"
+                  : "border-yellow-200 bg-yellow-50 text-yellow-800"
               }`}
             >
               <div className="flex items-start gap-3">
-                {result.eligible ? (
+                {result.decision === "Likely Eligible" ? (
                   <CheckCircle className="h-5 w-5 mt-0.5 text-green-600" />
                 ) : (
                   <AlertCircle className="h-5 w-5 mt-0.5 text-red-600" />
                 )}
                 <div>
-                  <h4 className="font-semibold">{result.eligible ? "Potentially Eligible" : "May Not Be Eligible"}</h4>
-                  <p className="mt-1 text-sm">{result.message}</p>
+                  <h4 className="font-semibold">{result.decision || "Error"}</h4>
+                  <p className="mt-1 text-sm">{result.explanation || result.error}</p>
+                  {result.confidence && (
+                    <p className="mt-1 text-xs text-muted-foreground">Confidence: {result.confidence}%</p>
+                  )}
+                  {result.citations && result.citations.length > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <p className="font-semibold">Citations:</p>
+                      <ul className="list-disc pl-4">
+                        {result.citations.map((citation, index) => (
+                          <li key={index}>Document {citation}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {result.missing_information && result.missing_information.length > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      <p className="font-semibold">Missing Information:</p>
+                      <ul className="list-disc pl-4">
+                        {result.missing_information.map((info, index) => (
+                          <li key={index}>{info}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
