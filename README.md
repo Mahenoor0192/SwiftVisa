@@ -16,3 +16,4 @@ The objective of this project is to build a Large Language Model (LLM)-powered v
 - **Vishwa Chawda**  
 - **Prithika Palanisamy**  
 - **Sahithi Reddy**
+- **Sahil Chaure**
