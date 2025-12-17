@@ -1,5 +1,3 @@
-# create .gitignore (overwrites if exists)
-@"
 # Python
 __pycache__/
 *.pyc
@@ -15,7 +13,7 @@ venv311/
 # Data and vector stores (don't commit large data)
 data/
 data/*
-!data/policies/       # if you want to keep raw PDFs in repo, remove these two lines
+!data/policies/
 !data/cleaned_policies/
 vector_store/
 *.faiss
@@ -25,4 +23,9 @@ vector_store/
 .vscode/
 .DS_Store
 Thumbs.db
-"@ > .gitignore
+
+# Environment variables (CRITICAL)
+.env
+.env.*
+*.env
+SwiftVisa-Backend/.env
